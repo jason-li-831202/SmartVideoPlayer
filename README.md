@@ -19,9 +19,9 @@ Example scripts for the detection using the [Mediapipe](https://github.com/googl
 <p align="center">
     <img src="temp/demo/GUI.JPG" width=600px>
 </p>
-<p align="center">
-    <a href="{https://www.youtube.com/watch?v=FwhnuyOf8ms&ab_channel=%E6%9F%8F%E5%B0%BCBunny}" title="Link Title">Reference Video URL</a>
-</p>
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=FwhnuyOf8ms&ab_channel=%E6%9F%8F%E5%B0%BCBunny">Reference Video URL</a>
+</div>
 
 ## ➤ Requirements
 
