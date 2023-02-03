@@ -45,7 +45,7 @@ Example scripts for the detection using the [Mediapipe](https://github.com/googl
 
     |  Reference | Icon | Action |     Describe      |
     |:-----------:|:-------:|:-------:|:---------------------------:|
-    | [<img src="temp/demo/start.JPG" width=100px>](temp/demo/) | [<img src="assets/play.png" width=20px>](assets/) | `Start` | Wait for `1s` to play `1x` speed video . |
+    | [<img src="temp/demo/start.JPG" width=100px>](temp/demo/) | [<img src="assets/play.png" width=20px>](assets/) | `Play` | Wait for `1s` to play `1x` speed video . |
     | [<img src="temp/demo/pause.JPG" width=100px>](temp/demo/) | [<img src="assets/pause.png" width=20px>](assets/) | `Pause` | Wait for `1s` to pause video . |
     | [<img src="temp/demo/incr_play_speed.JPG" width=100px>](temp/demo/) | [<img src="assets/fast-forward.png" width=20px>](assets/) | `Play SpeedUp` | 🖐 gesture turn `right` 20° ~ 40° to play `2x` speed up and  > 40° play `4x` speed up . |
     | [<img src="temp/demo/decr_play_speed.JPG" width=100px>](temp/demo/) | [<img src="assets/fast-backward.png" width=20px>](assets/) | `Play SpeedDown` | 🖐 gesture turn `left` 20° ~ 40° to play `2x` speed down and  > 40° play `4x` speed down . |
@@ -58,7 +58,7 @@ Example scripts for the detection using the [Mediapipe](https://github.com/googl
 
     |  Reference | Icon | Action |     Describe      |
     |:-----------:|:-------:|:-------:|:---------------------------:|
-    [<img src="assets/Face.png" width=100px>](assets/) | [<img src="assets/play.png" width=20px>](assets/) | `Start` | Wait for `2s` to play `1x` speed video . |
+    [<img src="assets/Face.png" width=100px>](assets/) | [<img src="assets/play.png" width=20px>](assets/) | `Play` | Wait for `2s` to play `1x` speed video . |
     | [<img src="assets/NoFace.png" width=100px>](temp/demo/) | [<img src="assets/pause.png" width=20px>](assets/) | `Pause` | Video will automatically pauses immediately . |
 
 
@@ -81,4 +81,18 @@ Example scripts for the detection using the [Mediapipe](https://github.com/googl
         <img src="temp/demo/open_in_file.png" width=400px>
 
 
-# [Demo]()
+## ➤ Demo
+
+* [***Demo Youtube Video***]()
+
+* ***Play/Pause***
+
+![!play-pause](temp/demo/play-pause.gif)
+
+* ***Adjust Voiume***
+
+![!play-pause](temp/demo/adjust-volume.gif)
+
+* ***Speed Up/Down***
+
+![!speedup-down](temp/demo/speedup-down.gif)
