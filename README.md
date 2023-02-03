@@ -17,7 +17,7 @@ Example scripts for the detection using the [Mediapipe](https://github.com/googl
 3) [Windows](#Windows)
 
 <p align="center">
-    <img src="temp/demo/GUI.jpg" width=500px>
+    <img src="temp/demo/GUI.JPG" width=600px>
 </p>
 <p align="center">
     <a href="{https://www.youtube.com/watch?v=FwhnuyOf8ms&ab_channel=%E6%9F%8F%E5%B0%BCBunny}" title="Link Title">Reference Video URL</a>
@@ -45,10 +45,10 @@ Example scripts for the detection using the [Mediapipe](https://github.com/googl
 
     |  Reference | Icon | Action |     Describe      |
     |:-----------:|:-------:|:-------:|:---------------------------:|
-    | [<img src="temp/demo/start.jpg" width=100px>](temp/demo/) | [<img src="assets/play.png" width=20px>](assets/) | `Start` | Wait for `1s` to play `1x` speed video . |
-    | [<img src="temp/demo/pause.jpg" width=100px>](temp/demo/) | [<img src="assets/pause.png" width=20px>](assets/) | `Pause` | Wait for `1s` to pause video . |
-    | [<img src="temp/demo/incr_play_speed.jpg" width=100px>](temp/demo/) | [<img src="assets/fast-forward.png" width=20px>](assets/) | `Play SpeedUp` | 🖐 gesture turn `right` 20° ~ 40° to play `2x` speed up and  > 40° play `4x` speed up . |
-    | [<img src="temp/demo/decr_play_speed.jpg" width=100px>](temp/demo/) | [<img src="assets/fast-backward.png" width=20px>](assets/) | `Play SpeedDown` | 🖐 gesture turn `left` 20° ~ 40° to play `2x` speed down and  > 40° play `4x` speed down . |
+    | [<img src="temp/demo/start.JPG" width=100px>](temp/demo/) | [<img src="assets/play.png" width=20px>](assets/) | `Start` | Wait for `1s` to play `1x` speed video . |
+    | [<img src="temp/demo/pause.JPG" width=100px>](temp/demo/) | [<img src="assets/pause.png" width=20px>](assets/) | `Pause` | Wait for `1s` to pause video . |
+    | [<img src="temp/demo/incr_play_speed.JPG" width=100px>](temp/demo/) | [<img src="assets/fast-forward.png" width=20px>](assets/) | `Play SpeedUp` | 🖐 gesture turn `right` 20° ~ 40° to play `2x` speed up and  > 40° play `4x` speed up . |
+    | [<img src="temp/demo/decr_play_speed.JPG" width=100px>](temp/demo/) | [<img src="assets/fast-backward.png" width=20px>](assets/) | `Play SpeedDown` | 🖐 gesture turn `left` 20° ~ 40° to play `2x` speed down and  > 40° play `4x` speed down . |
     | [<img src="temp/demo/adjust_volume.gif" width=100px>](temp/demo/) |  | `+/- Volume` | use thumb/index finger to control volume . |
     | None | [<img src="assets/file-import.png" width=30px>](assets/) | `Import File` | if you don't pre-set `SmartVideoPlayer.exe` for default startup method, please import file from here . |
     | None | [<img src="assets/undo.png" width=30px>](assets/) | `Undo` | Undo init actions . |
