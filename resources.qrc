@@ -1,0 +1,13 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+
+<file alias="SmartVideoPlayer">SmartVideoPlayer.ico</file>
+<file alias="buttonCamera">assets/control-center.png</file>
+<file alias="buttonImport">assets/file-import.png</file>
+<file alias="buttonBackward">assets/fast-backward.png</file>
+<file alias="buttonPlay">assets/play.png</file>
+<file alias="buttonPause">assets/pause.png</file>
+<file alias="buttonForward">assets/fast-forward.png</file>
+<file alias="buttonStop">assets/undo.png</file>
+</qresource>
+</RCC>

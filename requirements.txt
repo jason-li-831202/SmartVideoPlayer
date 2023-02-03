@@ -1,0 +1,8 @@
+opencv-python==4.5.4.60
+pyqt5
+python-vlc
+numpy
+pathlib
+configparser
+pafy
+youtube-dl
