@@ -83,7 +83,7 @@ Example scripts for the detection using the [Mediapipe](https://github.com/googl
 
 ## ➤ Demo
 
-* [***Demo Youtube Video***]()
+* [***Demo Youtube Video***](https://www.youtube.com/watch?v=f4rDzsXY1QQ)
 
 * ***Play/Pause***
 
