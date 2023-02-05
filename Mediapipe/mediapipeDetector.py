@@ -82,14 +82,19 @@ class HandModule(object) :
 		bbox = []
 		kpss_list = list(map(list, kpss))
 		bbox = np.array(kpss_list)
-		dx = bbox[12,0]-bbox[0,0]
-		dy = bbox[12,1]-bbox[0,1]
+		dx = bbox[9,0]-bbox[0,0]
+		dy = bbox[9,1]-bbox[0,1]
 		angle = np.arctan(dy/dx)
 		angle = int(angle * 180 / math.pi)
 		if (dx >=0) :
 			angle += 90
 		else :
 			angle -= 90
+		if (bbox[20, 0] >bbox[4, 0]) :
+			angle += 5
+		else :
+			angle -= 10
+
 		return angle
 
 	def process(self, image):
@@ -279,6 +284,39 @@ class MediapipeDetector(object):
 		get_colors = list(map(lambda i:"#" +"%06x" % random.randint(0, 0xFFFFFF),range(len(self.class_names)) ))
 		self.colors_dict = dict(zip(list(self.class_names), get_colors))
 
+	def draw_fill_rect(self, img, left_top_point, right_bottom_point, label) :
+		tl = 3 or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
+		c1, c2 = left_top_point, right_bottom_point        
+		tf = max(tl - 1, 1)  # font thickness
+		t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
+		c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
+		return c1, c2
+
+	def draw_angled_rect(self, img, left_top_point, right_bottom_point, angle, color=(255, 255, 255), thickness=2):
+		(xmin, ymin) = left_top_point
+		(xmax, ymax) = right_bottom_point
+
+		center_x = (xmax+xmin)/2
+		center_y = (ymax+ymin)/2
+		height = ymax - ymin
+		width = xmax - xmin
+
+		_angle = angle * math.pi / 180.0
+		b = math.cos(_angle) * 0.5
+		a = math.sin(_angle) * 0.5
+		pt0 = (int(center_x - a * height - b * width),
+			int(center_y + b * height - a * width))
+		pt1 = (int(center_x + a * height - b * width),
+			int(center_y - b * height - a * width))
+		pt2 = (int(2 * center_x - pt0[0]), int(2 * center_y - pt0[1]))
+		pt3 = (int(2 * center_x - pt1[0]), int(2 * center_y - pt1[1]))
+
+		cv2.line(img, pt0, pt1, color, thickness)
+		cv2.line(img, pt1, pt2, color, thickness)
+		cv2.line(img, pt2, pt3, color, thickness)
+		cv2.line(img, pt3, pt0, color, thickness)
+		return pt1, pt3
+    
 	def get_boxes_coordinate(self, bounding_boxes, ratiow, ratioh):
 		bounding_boxes[0] = int(bounding_boxes[0] * ratiow )
 		bounding_boxes[1] = int(bounding_boxes[1] * ratioh )
@@ -312,6 +350,7 @@ class MediapipeDetector(object):
 				landmark = []
 				if (self.detector_type == "hand_landmark") :
 					landmark = Landmarks.landmark
+					# classification.classification[0].label
 					detect_box = self.Detector.get_box(landmark)
 				elif (self.detector_type == "face_detection" ) :
 					landmark = Landmarks.location_data.relative_keypoints
@@ -340,24 +379,25 @@ class MediapipeDetector(object):
 		return slider_len
 
 	def DrawDetectedOnFrame(self, frame_show, thickness=2) :
-		tl = 3 or round(0.002 * (frame_show.shape[0] + frame_show.shape[1]) / 2) + 1  # line/font thickness
 		if ( len(self.object_info) != 0 )  :
 			for box, kpss, angle in self.object_info:
 				ymin, xmin, ymax, xmax, label = box
 				if (len(kpss) != 0) :
 					for kp in kpss :
 						cv2.circle(frame_show,  kp, 1, (255, 255, 255), thickness=-1)
-				c1, c2 = (xmin, ymin), (xmax, ymax)        
-				tf = max(tl - 1, 1)  # font thickness
-				t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
-				c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
 
 				if (label != 'unknown') :
+					if (label == 'five') :
+						(xmin, ymin), _ = self.draw_angled_rect(frame_show, (xmin, ymin), (xmax, ymax), angle, hex_to_rgb(self.colors_dict[label]), thickness)
+					else :
+						cv2.rectangle(frame_show, (xmin, ymin), (xmax, ymax), hex_to_rgb(self.colors_dict[label]), thickness)
+					c1, c2 = self.draw_fill_rect(frame_show, (xmin, ymin), (xmax, ymax), label )
 					cv2.rectangle(frame_show, c1, c2, hex_to_rgb(self.colors_dict[label]), -1, cv2.LINE_AA)
-					cv2.rectangle(frame_show, (xmin, ymin), (xmax, ymax), hex_to_rgb(self.colors_dict[label]), thickness)
 				else :
-					cv2.rectangle(frame_show, c1, c2, (0, 0, 0), -1, cv2.LINE_AA)
+					c1, c2 = self.draw_fill_rect(frame_show, (xmin, ymin), (xmax, ymax), label )
 					cv2.rectangle(frame_show, (xmin, ymin), (xmax, ymax), (0, 0, 0), thickness)
+					cv2.rectangle(frame_show, c1, c2, (0, 0, 0), -1, cv2.LINE_AA)
+
 				cv2.putText(frame_show, label, (xmin, ymin - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
 
