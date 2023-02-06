@@ -87,12 +87,12 @@ Example scripts for the detection using the [Mediapipe](https://github.com/googl
 
 * ***Play/Pause***
 
-![!play-pause](temp/demo/play-pause.gif)
+    ![!play-pause](temp/demo/play-pause.gif)
 
 * ***Adjust Voiume***
 
-![!play-pause](temp/demo/adjust-volume.gif)
+    ![!play-pause](temp/demo/adjust-volume.gif)
 
 * ***Speed Up/Down***
 
-![!speedup-down](temp/demo/speedup-down.gif)
+    ![!speedup-down](temp/demo/speedup-down.gif)

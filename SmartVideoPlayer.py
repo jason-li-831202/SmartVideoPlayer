@@ -214,14 +214,14 @@ class DetectorWorker(QtCore.QThread):
 
                     if (self.is_display) :  
                         if (self.face_timer.togger) :
-                            self.faceDetector.DrawDetectedOnFrame(camImage, 10)
+                            camImage = self.faceDetector.DrawDetectedOnFrame(camImage, 10)
                         else :
-                            self.faceDetector.DrawDetectedOnFrame(camImage, 2)
+                            camImage = self.faceDetector.DrawDetectedOnFrame(camImage, 2)
 
                         if (self.gesture_timer.togger) :
-                            self.handDetector.DrawDetectedOnFrame(camImage, 10)
+                            camImage = self.handDetector.DrawDetectedOnFrame(camImage, 10)
                         else :
-                            self.handDetector.DrawDetectedOnFrame(camImage, 2)
+                            camImage = self.handDetector.DrawDetectedOnFrame(camImage, 2)
 
                         camImage = cv2.resize(camImage, (320, 240))
                         cv2.imshow('MediaPipe', camImage)

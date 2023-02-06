@@ -2,6 +2,7 @@ import cv2
 import sys
 import random
 import math, time
+from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 sys.path.append("..")
 import configparser
@@ -54,7 +55,7 @@ class HandModule(object) :
 		return detect_box
 
 	def get_line(self, hand_landmarks):
-		line_len = None
+		length = None
 		thumb_finger_point, finger_middle_point, index_finger_point = None, None, None
 		if hand_landmarks:
 			# 获取大拇指指尖坐标
@@ -71,12 +72,15 @@ class HandModule(object) :
 			# print(thumb_finger_tip_x)
 			thumb_finger_point = (thumb_finger_tip_x, thumb_finger_tip_y)
 			index_finger_point = (index_finger_tip_x, index_finger_tip_y)
-
+	
 			# 勾股定理计算长度
-			line_len = int(math.hypot((index_finger_tip_x - thumb_finger_tip_x),
+			length = int(math.hypot((index_finger_tip_x - thumb_finger_tip_x),
 									(index_finger_tip_y - thumb_finger_tip_y)))
+			
+			# from numpy we find our length,by converting hand range in terms of volume range ie b/w -63.5 to 0
+			# vol = np.interp(length,[20,150],[0, 100]) 
 
-		return line_len, (thumb_finger_point, finger_middle_point, index_finger_point)
+		return length, (thumb_finger_point, finger_middle_point, index_finger_point)
 
 	def get_angle(self, kpss):
 		bbox = []
@@ -284,17 +288,22 @@ class MediapipeDetector(object):
 		get_colors = list(map(lambda i:"#" +"%06x" % random.randint(0, 0xFFFFFF),range(len(self.class_names)) ))
 		self.colors_dict = dict(zip(list(self.class_names), get_colors))
 
-	def draw_fill_rect(self, img, left_top_point, right_bottom_point, label) :
-		tl = 3 or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line/font thickness
-		c1, c2 = left_top_point, right_bottom_point        
-		tf = max(tl - 1, 1)  # font thickness
-		t_size = cv2.getTextSize(label, 0, fontScale=tl / 3, thickness=tf)[0]
-		c2 = c1[0] + t_size[0], c1[1] - t_size[1] - 3
-		return c1, c2
+	def draw_rotated_text(self, img, text, text_location, angle, color, *args, **kwargs):
+		mask_text = np.zeros(img.shape, dtype=np.uint8)
 
-	def draw_angled_rect(self, img, left_top_point, right_bottom_point, angle, color=(255, 255, 255), thickness=2):
-		(xmin, ymin) = left_top_point
-		(xmax, ymax) = right_bottom_point
+		cv2.putText(mask_text, text, text_location, cv2.FONT_HERSHEY_SIMPLEX, 1, color, 3)
+
+		# Rotate the image using cv2.warpAffine()
+		M = cv2.getRotationMatrix2D( (int(text_location[0]), int(text_location[1])), -angle, 1)
+		mask = cv2.warpAffine(mask_text, M, (img.shape[1], img.shape[0]))
+		ret, mask_boolean = cv2.threshold(mask , 127, 254, cv2.THRESH_BINARY)
+		out = np.array(img).astype(int) * np.array(mask_boolean+1).astype(int)
+		out[out>=255]=255
+		return out.astype(np.uint8)
+
+	def draw_rotated_rect(self, img, pt1_point, pt3_point, angle, label, color=(255, 255, 255), thickness=2):
+		(xmin, ymin) = pt1_point
+		(xmax, ymax) = pt3_point
 
 		center_x = (xmax+xmin)/2
 		center_y = (ymax+ymin)/2
@@ -315,8 +324,22 @@ class MediapipeDetector(object):
 		cv2.line(img, pt1, pt2, color, thickness)
 		cv2.line(img, pt2, pt3, color, thickness)
 		cv2.line(img, pt3, pt0, color, thickness)
-		return pt1, pt3
-    
+
+		# calc_label_rect
+		if (label) :
+			tl = 3 or round(0.002 * (img.shape[0] + img.shape[1]) / 2) + 1  # line thickness
+			tf = max(tl - 1, 1)  # font thickness
+			t_size = cv2.getTextSize(label, 0, fontScale=tl / 2, thickness=tf)[0]
+			for offset in range(0, 30, 2):
+				pt_offset = (int(center_x - a * (height+2*offset )  - b * t_size[0] ),
+							int((center_y-(offset /2))  + b * (height+offset )  - a * t_size[0] ))
+				label_start = (int(center_x  + a * (height+2*offset) - b * width ),
+						int(center_y-(offset /2) - b * (height+offset ) - a * width))
+				label_end = (int(2 * center_x- pt_offset[0]  ), int(2 * (center_y-(offset /2)) - pt_offset[1]) )
+				cv2.line(img, label_start, label_end, color, thickness)
+
+		return pt1, pt2
+	
 	def get_boxes_coordinate(self, bounding_boxes, ratiow, ratioh):
 		bounding_boxes[0] = int(bounding_boxes[0] * ratiow )
 		bounding_boxes[1] = int(bounding_boxes[1] * ratioh )
@@ -386,19 +409,10 @@ class MediapipeDetector(object):
 					for kp in kpss :
 						cv2.circle(frame_show,  kp, 1, (255, 255, 255), thickness=-1)
 
-				if (label != 'unknown') :
-					if (label == 'five') :
-						(xmin, ymin), _ = self.draw_angled_rect(frame_show, (xmin, ymin), (xmax, ymax), angle, hex_to_rgb(self.colors_dict[label]), thickness)
-					else :
-						cv2.rectangle(frame_show, (xmin, ymin), (xmax, ymax), hex_to_rgb(self.colors_dict[label]), thickness)
-					c1, c2 = self.draw_fill_rect(frame_show, (xmin, ymin), (xmax, ymax), label )
-					cv2.rectangle(frame_show, c1, c2, hex_to_rgb(self.colors_dict[label]), -1, cv2.LINE_AA)
-				else :
-					c1, c2 = self.draw_fill_rect(frame_show, (xmin, ymin), (xmax, ymax), label )
-					cv2.rectangle(frame_show, (xmin, ymin), (xmax, ymax), (0, 0, 0), thickness)
-					cv2.rectangle(frame_show, c1, c2, (0, 0, 0), -1, cv2.LINE_AA)
-
-				cv2.putText(frame_show, label, (xmin, ymin - 5), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+				(xmin, ymin), (xmax, ymax) = self.draw_rotated_rect(frame_show, (xmin, ymin), (xmax, ymax), angle, label, hex_to_rgb(self.colors_dict[label]), thickness)
+				frame_show = self.draw_rotated_text(frame_show, label, (xmin, ymin - 5), angle, (255, 255, 255))
+				
+		return frame_show
 
 
 if __name__ == "__main__":
@@ -419,10 +433,10 @@ if __name__ == "__main__":
 			# If loading a video, use 'break' instead of 'continue'.
 			break
 		faceDetector.DetectFrame(image)
-		faceDetector.DrawDetectedOnFrame(image)
+		image = faceDetector.DrawDetectedOnFrame(image)
 
 		handDetector.DetectFrame(image)
-		handDetector.DrawDetectedOnFrame(image)
+		image = handDetector.DrawDetectedOnFrame(image)
 		handDetector.GetSliderFromLandmark(image)
 
 		cv2.imshow('MediaPipe Hands', image)
