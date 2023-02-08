@@ -2,12 +2,12 @@ import cv2
 import sys
 import random
 import math, time
-from PIL import Image, ImageDraw, ImageFont
-from pathlib import Path
 sys.path.append("..")
 import configparser
 import numpy as np
 import Mediapipe as mp
+from pathlib import Path
+from Mediapipe.fingerEnum import Finger, FingerCurled
 
 def hex_to_rgb(value):
 	value = value.lstrip('#')
@@ -31,13 +31,62 @@ class HandModule(object) :
 			# Minimum confidence value ([0.0, 1.0]) from the hand detection model for the detection to be considered successful. (default = 0.5)
 			min_tracking_confidence= float(track_score)
 		)
-		
+		self.finger_curled = [
+			FingerCurled.NoCurl,
+			FingerCurled.NoCurl,
+			FingerCurled.NoCurl,
+			FingerCurled.NoCurl,
+			FingerCurled.NoCurl,
+		]
+
 	def __getEuclideanDistance(self, posA, posB):
 		return math.sqrt((posA.x - posB.x)**2 + (posA.y - posB.y)**2)
 
 	def __isThumbNearIndexFinger(self, thumbPos, indexPos):
 		return self.__getEuclideanDistance(thumbPos, indexPos) < 0.1
 
+	def __isFingerCurled(self, start_point, mid_point, end_point):
+		start_mid_x_dist = start_point.x - mid_point.x
+		start_end_x_dist = start_point.x - end_point.x
+		mid_end_x_dist = mid_point.x - end_point.x
+
+		start_mid_y_dist = start_point.y - mid_point.y
+		start_end_y_dist = start_point.y - end_point.y
+		mid_end_y_dist = mid_point.y - end_point.y
+
+		start_mid_dist = math.sqrt(
+			start_mid_x_dist ** 2 +
+			start_mid_y_dist ** 2 )
+		start_end_dist = math.sqrt(
+			start_end_x_dist ** 2 +
+			start_end_y_dist ** 2 )
+		mid_end_dist = math.sqrt(
+			mid_end_x_dist ** 2 +
+			mid_end_y_dist ** 2 )
+
+		cos_in = (mid_end_dist ** 2 + start_mid_dist ** 2 -
+				  start_end_dist ** 2) / (2 * mid_end_dist * start_mid_dist+1e-10)
+		if cos_in > 1.0:
+			cos_in = 1.0
+		elif cos_in < -1.0:
+			cos_in = -1.0
+		angle_of_curve = math.acos(cos_in)
+		angle_of_curve = (57.2958 * angle_of_curve) % 180
+
+		# print('Angle of curve = {}'.format(angle_of_curve))
+		HALF_CURL_START_LIMIT = 60.0
+		NO_CURL_START_LIMIT = 130.0
+
+		finger_curled = None
+		if angle_of_curve > NO_CURL_START_LIMIT:
+			finger_curled = FingerCurled.NoCurl
+		elif angle_of_curve > HALF_CURL_START_LIMIT:
+			finger_curled = FingerCurled.HalfCurl
+		else:
+			finger_curled = FingerCurled.FullCurl
+
+		return finger_curled
+	
 	def get_box(self, hand_landmarks, r=0.2):
 		bbox = []
 		for hand in hand_landmarks:
@@ -54,16 +103,16 @@ class HandModule(object) :
 		detect_box = np.array([xmin, ymin, xmax, ymax])
 		return detect_box
 
-	def get_line(self, hand_landmarks):
+	def get_line(self, kpss):
 		length = None
 		thumb_finger_point, finger_middle_point, index_finger_point = None, None, None
-		if hand_landmarks:
+		if kpss:
 			# 获取大拇指指尖坐标
-			thumb_finger_tip = hand_landmarks[4]
+			thumb_finger_tip = kpss[4]
 			thumb_finger_tip_x = math.ceil(thumb_finger_tip[0] )
 			thumb_finger_tip_y = math.ceil(thumb_finger_tip[1] )
 			# 获取食指指尖坐标
-			index_finger_tip = hand_landmarks[8]
+			index_finger_tip = kpss[8]
 			index_finger_tip_x = math.ceil(index_finger_tip[0] )
 			index_finger_tip_y = math.ceil(index_finger_tip[1] )
 			# 中间点
@@ -112,72 +161,54 @@ class HandModule(object) :
 		else :
 			return []
 
-	def check_label(self, handLandmarks):
-
+	def check_label(self, handLandmarks, print_finger_info=False):
 		thumbIsOpen = False
 		indexIsOpen = False
 		middelIsOpen = False
 		ringIsOpen = False
 		pinkyIsOpen = False
 
-		if (handLandmarks[0].x < handLandmarks[1].x) :
-			right = True
-			left = False
-		else :
-			right = False
-			left = True
+		for finger in Finger:
+			point_index_at = 0
+			if finger == Finger.Thumb:
+				point_index_at = 1
+			finger_points_at = Finger.get_array_of_points(finger)
+			start_point_at = handLandmarks[finger_points_at[point_index_at][0]]
+			mid_point_at = handLandmarks[finger_points_at[point_index_at + 1][1]]
+			end_point_at = handLandmarks[finger_points_at[3][1]]
+			finger_curled = self.__isFingerCurled(start_point_at, mid_point_at, end_point_at)
+			self.finger_curled[finger] = finger_curled
 
-		# pinky
-		pseudoFixKeyPoint = handLandmarks[18].y
-		if ( handLandmarks[19].y < handLandmarks[0].y) :
-			if handLandmarks[19].y <= pseudoFixKeyPoint and handLandmarks[20].y <= pseudoFixKeyPoint:
-				pinkyIsOpen = True
-		else :
-			pseudoFixKeyPoint = handLandmarks[18].x
-			if handLandmarks[19].x < pseudoFixKeyPoint and handLandmarks[20].x < pseudoFixKeyPoint and right :
-				pinkyIsOpen = True
-			elif handLandmarks[19].x > pseudoFixKeyPoint and handLandmarks[20].x > pseudoFixKeyPoint and left :
-				pinkyIsOpen = True
-
-		# ring
-		pseudoFixKeyPoint = handLandmarks[14].y
-		if handLandmarks[15].y < pseudoFixKeyPoint and handLandmarks[16].y < pseudoFixKeyPoint:
-			ringIsOpen = True
-
-		# middel
-		pseudoFixKeyPoint = handLandmarks[10].y
-		if handLandmarks[11].y < pseudoFixKeyPoint and handLandmarks[12].y < pseudoFixKeyPoint:
-			middelIsOpen = True
-
-		# index
-		pseudoFixKeyPoint = handLandmarks[6].y
-		if handLandmarks[7].y < pseudoFixKeyPoint and handLandmarks[8].y < pseudoFixKeyPoint:
-			indexIsOpen = True
-
-		# thumb
-		pseudoFixKeyPoint = handLandmarks[2].x
-		if handLandmarks[3].x < pseudoFixKeyPoint and handLandmarks[4].x < pseudoFixKeyPoint : 
-			if (left) :
+		for finger_index, curl in zip( Finger, self.finger_curled):
+			if print_finger_info:
+				print('Finger: {}, Curl: {}'.format(
+						Finger.get_finger_name(finger_index), FingerCurled.get_finger_curled_name(curl)))
+			
+			if finger_index == Finger.Thumb and curl==FingerCurled.NoCurl :
 				thumbIsOpen = True
-			if (right and handLandmarks[4].y < handLandmarks[5].y and indexIsOpen  ) :
-				thumbIsOpen = True
-		elif handLandmarks[3].x > pseudoFixKeyPoint and handLandmarks[4].x > pseudoFixKeyPoint :
-			if (left and handLandmarks[4].y < handLandmarks[5].y and indexIsOpen  ) :
-				thumbIsOpen = True
-			if (right) :
-				thumbIsOpen = True
+			if curl in {FingerCurled.NoCurl, FingerCurled.HalfCurl}:
+				if finger_index == Finger.Index :
+					indexIsOpen = True
+				elif finger_index == Finger.Middle :
+					middelIsOpen = True
+				elif finger_index == Finger.Ring :
+					ringIsOpen = True
+				elif finger_index == Finger.Pinky :
+					pinkyIsOpen = True
+
+		thumbindexlen = int(math.hypot((handLandmarks[4].x - handLandmarks[5].x),
+								(handLandmarks[4].y - handLandmarks[5].y)))
+		indexpinkylen = int(math.hypot((handLandmarks[5].x - handLandmarks[17].x),
+								(handLandmarks[5].y - handLandmarks[17].y)))
 
 		# print(thumbIsOpen, indexIsOpen, middelIsOpen, ringIsOpen, pinkyIsOpen)
-		thumbindexlen = abs(handLandmarks[4].x - handLandmarks[5].x)
-		indexpinkylen = abs(handLandmarks[5].x - handLandmarks[17].x) 
-
 		if thumbIsOpen and indexIsOpen and middelIsOpen and ringIsOpen and pinkyIsOpen:
 			return self.class_names[0]
 
 		# elif indexIsOpen and middelIsOpen and not thumbIsOpen and not ringIsOpen and not pinkyIsOpen :
 		# 	return self.class_names[1]
-
-		elif not indexIsOpen and not middelIsOpen and not ringIsOpen and not pinkyIsOpen and ( not thumbIsOpen and thumbindexlen <= indexpinkylen ) :
+	
+		elif not indexIsOpen and not middelIsOpen and not ringIsOpen and not pinkyIsOpen and (not thumbIsOpen or thumbindexlen <= indexpinkylen ) :
 			return self.class_names[2]
 
 		elif thumbIsOpen and indexIsOpen and not middelIsOpen and not ringIsOpen and not pinkyIsOpen :
@@ -384,7 +415,8 @@ class MediapipeDetector(object):
 				kpss = self.get_kpss_coordinate(landmark, ratiow, ratioh)
 				angle = self.Detector.get_angle(kpss)
 				if (angle >= min_angle and angle <= max_angle) or (angle <= -min_angle and angle >= -max_angle):
-					self.object_info.append(([bounding_boxes[1], bounding_boxes[0], bounding_boxes[3], bounding_boxes[2], label], kpss, angle))
+					if ( bounding_boxes[0] >=0 and bounding_boxes[1] >= 0 and bounding_boxes[3] <= image.shape[0] and bounding_boxes[2] <= image.shape[1]):
+						self.object_info.append(([bounding_boxes[1], bounding_boxes[0], bounding_boxes[3], bounding_boxes[2], label], kpss, angle))
 
 	def GetSliderFromLandmark(self, frame_show) :
 		slider_len = None

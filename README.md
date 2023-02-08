@@ -16,6 +16,8 @@ Example scripts for the detection using the [Mediapipe](https://github.com/googl
 
 3) [Windows](#Windows)
 
+4) [Demo](#Demo)
+
 <p align="center">
     <img src="temp/demo/GUI.JPG" width=600px>
 </p>
