@@ -36,7 +36,7 @@ from Mediapipe.mediapipeDetector import MediapipeDetector
 
 
 __appname__ = "Smart Video Player"
-__version__ = "v1.0.0"
+__version__ = "v1.0.1"
 __app_ico__ = "SmartVideoPlayer.ico"
 # Constants
 VLC_WHITE = 16777215
