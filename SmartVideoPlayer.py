@@ -38,6 +38,7 @@ from Mediapipe.mediapipeDetector import MediapipeDetector
 __appname__ = "Smart Video Player"
 __version__ = "v1.0.1"
 __app_ico__ = "SmartVideoPlayer.ico"
+
 # Constants
 VLC_WHITE = 16777215
 CMD_OPTIONS = '--freetype-fontsize={} --freetype-color={}'
@@ -45,7 +46,6 @@ PERCENT_LABEL = '{}%'
 POSITION_LABEL = '{} / {}'
 SUB_SIZE_START_VALUE = 75
 VOLUME_START_VALUE = 60
-
 if getattr(sys, 'frozen', False):
 	script_dir = Path(sys.executable).parents[0]
 else :
@@ -65,7 +65,14 @@ class StopWatch():
 	def _operate(self):
 		"""
 		定时器定时时间到，操作处理
+
+		Args:
+			None
+
+		Returns:
+			None
 		"""
+
 		if (self.togger_label==self.track_label) :
 			self.num += 1
 			if (self.num >= self.sec):
@@ -515,7 +522,7 @@ class VideoPlayer(QMainWindow):
 		self.vlcFrame.setPalette(self.palette)
 		self.vlcFrame.setAutoFillBackground(True)
 		# position slider
-		self.positionSlider.valueChanged.connect(self.set_position)
+		self.positionSlider.valueChanged.connect(self.setSliderPosition)
 		self.positionSlider.sliderReleased.connect(self.restart_timer)
 		# buttons
 		self.buttonCamera.clicked.connect(self.useSmartControl)
@@ -539,7 +546,7 @@ class VideoPlayer(QMainWindow):
 		# timer to postion slider update
 		self.timer = QTimer(self)
 		self.timer.setInterval(150)
-		self.timer.timeout.connect(self._updatePositionSlider)
+		self.timer.timeout.connect(self.updatePositionSlider)
 
 	def __getDetectorLabel(self, face_label, gesture_label) :
 		"""
@@ -614,6 +621,22 @@ class VideoPlayer(QMainWindow):
 			self.setControlPb = 4
 			self.mediaplayer.set_rate(4)    
 		self._updatePbRateLabel()
+
+	def _updatePbRateLabel(self):
+		if (self.mediaplayer.get_rate() < 1) :
+			self.pbRateLabel.setText("<< {}x".format(str(self.mediaplayer.get_rate())))
+		else :
+			self.pbRateLabel.setText(">> {}x".format(str(self.mediaplayer.get_rate())))
+
+	def _updatePositionLabel(self):
+		# media length in milliseconds
+		length = self.mediaplayer.get_length()
+		current = self.mediaplayer.get_time()
+		# updating label
+		self.positionLabel.setText(POSITION_LABEL.format(self.msToHMS(current), self.msToHMS(length)))
+
+		if self.mediaplayer.get_state() == vlc.State.Ended :
+			self.release()
 
 	@pyqtSlot(QKeyEvent)
 	def keyPressEvent(self, event):
@@ -777,8 +800,8 @@ class VideoPlayer(QMainWindow):
 	@pyqtSlot()
 	def undo(self):
 		# stopping player
-		self.mediaplayer.set_position(0)
-		self._updatePositionSlider()
+		self.setSliderPosition(0)
+		self.updatePositionSlider()
 
 	@pyqtSlot()
 	def decrPbRate(self, rate=None):
@@ -837,13 +860,13 @@ class VideoPlayer(QMainWindow):
 		self.media = self.instance.media_new(self.path)
 		self.mediaplayer.set_media(self.media)
 		# update position and play
-		self.mediaplayer.set_position(0)
-		self._updatePositionSlider()
+		self.setSliderPosition(0)
+		self.updatePositionSlider()
 		self.buttonPlay.show()
 		self.buttonPause.hide()
 
 	@pyqtSlot(int)
-	def set_position(self, pos):
+	def setSliderPosition(self, pos):
 		# set the media position to where the slider was dragged (converts to float between 0 and 1)
 		self.timer.stop()
 		self.mediaplayer.set_position(pos / 1000.0)
@@ -853,7 +876,7 @@ class VideoPlayer(QMainWindow):
 		self.timer.start()
 
 	@pyqtSlot()
-	def _updatePositionSlider(self):
+	def updatePositionSlider(self):
 		# set the sliders position to its corresponding media position (qslider only accepts int)
 		pos = int(self.mediaplayer.get_position() * 1000)
 		# blocking signals and updating value
@@ -862,22 +885,6 @@ class VideoPlayer(QMainWindow):
 		self.positionSlider.blockSignals(False)
 		# updating position label
 		self._updatePositionLabel()
-
-	def _updatePositionLabel(self):
-		# media length in milliseconds
-		length = self.mediaplayer.get_length()
-		current = self.mediaplayer.get_time()
-		# updating label
-		self.positionLabel.setText(POSITION_LABEL.format(self.msToHMS(current), self.msToHMS(length)))
-
-		if self.mediaplayer.get_state() == vlc.State.Ended :
-			self.release()
-
-	def _updatePbRateLabel(self):
-		if (self.mediaplayer.get_rate() < 1) :
-			self.pbRateLabel.setText("<< {}x".format(str(self.mediaplayer.get_rate())))
-		else :
-			self.pbRateLabel.setText(">> {}x".format(str(self.mediaplayer.get_rate())))
 	
 	def try_release_media(self):
 		if self.media is not None: self.media.release()
@@ -894,7 +901,8 @@ class VideoPlayer(QMainWindow):
 		minutes = int((value/(1000*60))%60)
 		hours = int((value/(1000*60*60))%24)
 		return ':'.join((str(hours), str(minutes), str(seconds)))
-	
+
+
 # main function
 if __name__ == "__main__":
 	app = QApplication(sys.argv)

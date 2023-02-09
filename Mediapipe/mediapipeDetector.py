@@ -10,6 +10,15 @@ from pathlib import Path
 from Mediapipe.fingerEnum import Finger, FingerCurled
 
 def hex_to_rgb(value):
+	"""
+	Convert hex color codes into RGB format.
+
+	Args:
+		value: Hex color format.
+
+	Returns:
+		Output RGB format.
+	"""
 	value = value.lstrip('#')
 	lv = len(value)
 	return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
@@ -320,6 +329,19 @@ class MediapipeDetector(object):
 		self.colors_dict = dict(zip(list(self.class_names), get_colors))
 
 	def draw_rotated_text(self, img, text, text_location, angle, color, *args, **kwargs):
+		"""
+		Draw Rotated Text on image.
+
+		Args:
+			img: Image.
+			text: Text string to be drawn.
+			text_location: Bottom-left corner of the text string in the image.
+			angle: minus angle is Quadrant II/III  | plus angle is Quadrant I/IV 
+			color: Text color.
+
+		Returns:
+			Output frame results
+		"""
 		mask_text = np.zeros(img.shape, dtype=np.uint8)
 
 		cv2.putText(mask_text, text, text_location, cv2.FONT_HERSHEY_SIMPLEX, 1, color, 3)
@@ -333,6 +355,22 @@ class MediapipeDetector(object):
 		return out.astype(np.uint8)
 
 	def draw_rotated_rect(self, img, pt1_point, pt3_point, angle, label, color=(255, 255, 255), thickness=2):
+		"""
+		Draw Rotated Rect on image.
+
+		Args:
+			img: Image.
+			pt1_point: Vertex of the rectangle.
+			pt3_point: Vertex of the rectangle opposite to pt1 .
+			angle: minus angle is Quadrant II/III  | plus angle is Quadrant I/IV 
+			label: Calc text length to fill label background color.
+			color: Rectangle color or brightness (grayscale image).
+			thickness: Thickness of lines that make up the rectangle. Negative values, like #FILLED, mean that the function has to draw a filled rectangle.
+
+		Returns:
+			pt1: Get left-top (x, y) values.
+			pt2: Get right-top (x, y) values.
+		"""
 		(xmin, ymin) = pt1_point
 		(xmax, ymax) = pt3_point
 
@@ -372,6 +410,17 @@ class MediapipeDetector(object):
 		return pt1, pt2
 	
 	def get_boxes_coordinate(self, bounding_boxes, ratiow, ratioh):
+		"""
+		Parse the original size box.
+
+		Args:
+			bounding_boxes: [xmin, ymin, xmax, ymax].
+			ratiow: Original img width.
+			ratioh: Original img height.
+
+		Returns:
+			return box [xmin, ymin, xmax, ymax]
+		"""
 		bounding_boxes[0] = int(bounding_boxes[0] * ratiow )
 		bounding_boxes[1] = int(bounding_boxes[1] * ratioh )
 		bounding_boxes[2] = int(bounding_boxes[2] * ratiow )
@@ -379,12 +428,32 @@ class MediapipeDetector(object):
 		return bounding_boxes.astype(int)
 
 	def get_kpss_coordinate(self, handLandmarks, ratiow, ratioh):
+		"""
+		Parse the original size key-points.
+
+		Args:
+			bounding_boxes: Mediapipe output landmarks.
+			ratiow: Original img width.
+			ratioh: Original img height.
+
+		Returns:
+			return box [(x1, y1), (x2, y2) ... (xn, yn)]
+		"""
 		kpss = []
 		for handLandmark in handLandmarks :
 			kpss.append( (int(handLandmark.x*ratiow), int(handLandmark.y*ratioh)) )
 		return kpss
 
 	def DetectFrame(self, image):
+		"""
+		Calculate detection results.
+
+		Args:
+			image: Image.
+
+		Returns:
+			None
+		"""
 		self.object_info = []
 		min_angle = int(self.min_angle)
 		max_angle = int(self.max_angle)
@@ -419,6 +488,15 @@ class MediapipeDetector(object):
 						self.object_info.append(([bounding_boxes[1], bounding_boxes[0], bounding_boxes[3], bounding_boxes[2], label], kpss, angle))
 
 	def GetSliderFromLandmark(self, frame_show) :
+		"""
+		Get Length Between Thumb and Index Finger.
+
+		Args:
+			frame_show: img.
+
+		Returns:
+			return two points length 
+		"""
 		slider_len = None
 		if (self.detector_type == "hand_landmark") :
 			if ( len(self.object_info) != 0 )  :
@@ -434,6 +512,16 @@ class MediapipeDetector(object):
 		return slider_len
 
 	def DrawDetectedOnFrame(self, frame_show, thickness=2) :
+		"""
+		Draw results on image.
+
+		Args:
+			frame_show: Image.
+			thickness: Thickness of lines that make up the rectangle.
+
+		Returns:
+			Output frame results
+		"""
 		if ( len(self.object_info) != 0 )  :
 			for box, kpss, angle in self.object_info:
 				ymin, xmin, ymax, xmax, label = box
@@ -441,7 +529,7 @@ class MediapipeDetector(object):
 					for kp in kpss :
 						cv2.circle(frame_show,  kp, 1, (255, 255, 255), thickness=-1)
 
-				(xmin, ymin), (xmax, ymax) = self.draw_rotated_rect(frame_show, (xmin, ymin), (xmax, ymax), angle, label, hex_to_rgb(self.colors_dict[label]), thickness)
+				(xmin, ymin), _ = self.draw_rotated_rect(frame_show, (xmin, ymin), (xmax, ymax), angle, label, hex_to_rgb(self.colors_dict[label]), thickness)
 				frame_show = self.draw_rotated_text(frame_show, label, (xmin, ymin - 5), angle, (255, 255, 255))
 				
 		return frame_show
