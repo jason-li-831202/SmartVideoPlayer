@@ -49,7 +49,7 @@ class HandModule(object) :
 		]
 
 	def __getEuclideanDistance(self, posA, posB):
-		return math.sqrt((posA.x - posB.x)**2 + (posA.y - posB.y)**2)
+		return math.hypot((posA.x - posB.x), (posA.y - posB.y))
 
 	def __isThumbNearIndexFinger(self, thumbPos, indexPos):
 		return self.__getEuclideanDistance(thumbPos, indexPos) < 0.1
@@ -205,10 +205,8 @@ class HandModule(object) :
 				elif finger_index == Finger.Pinky :
 					pinkyIsOpen = True
 
-		thumbindexlen = int(math.hypot((handLandmarks[4].x - handLandmarks[5].x),
-								(handLandmarks[4].y - handLandmarks[5].y)))
-		indexpinkylen = int(math.hypot((handLandmarks[5].x - handLandmarks[17].x),
-								(handLandmarks[5].y - handLandmarks[17].y)))
+		thumbindexlen = self.__getEuclideanDistance(handLandmarks[4], handLandmarks[5])
+		indexpinkylen = self.__getEuclideanDistance(handLandmarks[5], handLandmarks[17])
 
 		# print(thumbIsOpen, indexIsOpen, middelIsOpen, ringIsOpen, pinkyIsOpen)
 		if thumbIsOpen and indexIsOpen and middelIsOpen and ringIsOpen and pinkyIsOpen:
